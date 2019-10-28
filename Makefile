@@ -34,6 +34,10 @@ rpm: ## build rpm packages
 deb: ## build deb packages
 	$(MAKE) -C $@ VERSION=$(VERSION) ENGINE_DIR=$(ENGINE_DIR) CLI_DIR=$(CLI_DIR) GO_VERSION=$(GO_VERSION) deb
 
+.PHONY: binaries
+binaries: ## build binaries into deb/build
+	$(MAKE) -C deb VERSION=$(VERSION) ENGINE_DIR=$(ENGINE_DIR) CLI_DIR=$(CLI_DIR) GO_VERSION=$(GO_VERSION) binaries
+
 .PHONY: static
 static: DOCKER_BUILD_PKGS:=static-linux cross-mac cross-win cross-arm
 static: ## build static-compiled packages
