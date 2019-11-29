@@ -10,6 +10,8 @@ GO_IMAGE=$(GO_BASE_IMAGE):$(GO_VERSION)-stretch
 DEB_VERSION=$(shell ./gen-deb-ver $(CLI_DIR) "$(VERSION)")
 CHOWN:=docker run --rm -v $(CURDIR):/v -w /v alpine chown
 EPOCH?=5
+DOCKER_BUILDKIT=1
+BUILD_TARGET=final
 
 ifdef BUILD_IMAGE
 	BUILD_IMAGE_FLAG=--build-arg $(BUILD_IMAGE)
@@ -20,6 +22,11 @@ BUILD?=docker build \
 	$(BUILD_IMAGE_FLAG) \
 	--build-arg GO_IMAGE=$(GO_IMAGE) \
 	--build-arg COMMON_FILES=$(COMMON_FILES) \
+	--build-arg VERSION=$(word 2, $(DEB_VERSION)) \
+	--build-arg DOCKER_GITCOMMIT=$(GITCOMMIT) \
+	--build-arg PLATFORM \
+	--target=$(BUILD_TARGET) \
+	$(BUILD_OPTS) \
 	-t debbuild-$@/$(ARCH) \
 	-f $(CURDIR)/$@/Dockerfile .
 # Additional flags may be necessary at some point
@@ -61,6 +68,12 @@ engine-$(ARCH).tar:
 .PHONY: deb
 deb: ubuntu debian ## build all deb packages except for raspbian
 
+.PHONY: binaries
+binaries: BUILD_TARGET=binaries
+binaries: BUILD_OPTS=--output type=local,dest=build
+binaries: deb
+
+
 .PHONY: ubuntu
 ubuntu: $(UBUNTU_VERSIONS) ## build all ubuntu deb packages
 
@@ -74,8 +87,8 @@ raspbian: $(RASPBIAN_VERSIONS) ## build all raspbian deb packages
 $(DISTROS): $(SOURCES)
 	@echo "== Building packages for $@ =="
 	$(BUILD)
-	$(RUN)
-	$(CHOWN) -R $(shell id -u):$(shell id -g) debbuild/$@
+#	$(RUN)
+#	$(CHOWN) -R $(shell id -u):$(shell id -g) debbuild/$@
 
 sources/engine.tgz:
 	mkdir -p $(@D)
