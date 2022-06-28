@@ -18,12 +18,15 @@ build_cli() {
     cd "${CLI_DIR}"
     set -x
     docker buildx build \
+      --build-arg BUILDKIT_MULTI_PLATFORM=true \
+      --build-arg CGO_ENABLED="${cgo_enabled}" \
+      --build-arg DEFAULT_PRODUCT_LICENSE \
+      --build-arg PACKAGER_NAME \
+      --build-arg PLATFORM \
+      --build-arg PRODUCT \
+      --build-arg VERSION="${STATIC_VERSION}" \
+      --output ./build \
       --platform "${TARGETPLATFORM}" \
-      --build-arg "PRODUCT" --build-arg "PLATFORM" --build-arg "DEFAULT_PRODUCT_LICENSE" --build-arg "PACKAGER_NAME" \
-      --build-arg "VERSION=${STATIC_VERSION}" \
-      --build-arg "BUILDKIT_MULTI_PLATFORM=true" \
-      --build-arg "CGO_ENABLED=${cgo_enabled}" \
-      --output "./build" \
       --target binary .
   )
 }
@@ -35,14 +38,18 @@ build_engine() {
     mkdir -p autogen # FIXME: remove when https://github.com/moby/moby/pull/43431 merged
     set -x
     docker buildx build \
+      --build-arg CGO_ENABLED="${cgo_enabled}" \
+      --build-arg CONTAINERD_VERSION \
+      --build-arg DEFAULT_PRODUCT_LICENSE \
+      --build-arg PACKAGER_NAME \
+      --build-arg PLATFORM \
+      --build-arg PRODUCT \
+      --build-arg RUNC_VERSION \
+      --build-arg VERSION="${STATIC_VERSION}" \
+      --output ./bundles \
       --platform "${TARGETPLATFORM}" \
-      --build-arg "PRODUCT" --build-arg "PLATFORM" --build-arg "DEFAULT_PRODUCT_LICENSE" --build-arg "PACKAGER_NAME" \
-      --build-arg "VERSION=${STATIC_VERSION}" \
-      --build-arg "CONTAINERD_VERSION" --build-arg "RUNC_VERSION" \
-      --build-arg "CGO_ENABLED=${cgo_enabled}" \
-      --output "./bundles" \
       --target binary .
-    mkdir -p "./bundles/${TARGETPLATFORM}"
+    mkdir -p ./bundles/"${TARGETPLATFORM}"
     cp -r ./bundles/binary-daemon/* "./bundles/${TARGETPLATFORM}/"
   )
 }
@@ -54,16 +61,20 @@ build_engine_cross() {
     mkdir -p autogen # FIXME: remove when https://github.com/moby/moby/pull/43431 merged
     set -x
     docker buildx build \
-      --build-arg "PRODUCT" --build-arg "PLATFORM" --build-arg "DEFAULT_PRODUCT_LICENSE" --build-arg "PACKAGER_NAME" \
-      --build-arg "VERSION=${STATIC_VERSION}" \
-      --build-arg "CONTAINERD_VERSION" --build-arg "RUNC_VERSION" \
-      --build-arg "CROSS=true" \
-      --build-arg "DOCKER_CROSSPLATFORMS=${TARGETPLATFORM}" \
-      --build-arg "CGO_ENABLED=${cgo_enabled}" \
-      --output "./bundles" \
+      --build-arg CGO_ENABLED="${cgo_enabled}" \
+      --build-arg CONTAINERD_VERSION \
+      --build-arg CROSS=true \
+      --build-arg DEFAULT_PRODUCT_LICENSE \
+      --build-arg DOCKER_CROSSPLATFORMS="${TARGETPLATFORM}" \
+      --build-arg PACKAGER_NAME \
+      --build-arg PLATFORM \
+      --build-arg PRODUCT \
+      --build-arg RUNC_VERSION \
+      --build-arg VERSION="${STATIC_VERSION}" \
+      --output ./bundles \
       --target cross .
     mkdir -p "./bundles/${TARGETPLATFORM}"
-    cp ./bundles/cross/${TARGETPLATFORM}-daemon/* "./bundles/${TARGETPLATFORM}/"
+    cp ./bundles/cross/"${TARGETPLATFORM}"-daemon/* "./bundles/${TARGETPLATFORM}/"
   )
 }
 
@@ -74,7 +85,7 @@ build_buildx() {
     set -x
     docker buildx build \
       --platform "${TARGETPLATFORM}" \
-      --build-arg "BUILDKIT_MULTI_PLATFORM=true" \
+      --build-arg BUILDKIT_MULTI_PLATFORM=true \
       --output "./bin" \
       --target binaries .
   )
@@ -136,10 +147,10 @@ esac
 mkdir -p "${dockerBuildDir}"
 case ${TARGETOS} in
   linux|darwin)
-    cp ${CLI_DIR}/build/${targetPair}/docker-${TARGETOS}-* "${dockerBuildDir}/docker"
+    cp "${CLI_DIR}"/build/"${targetPair}"/docker-"${TARGETOS}"-* "${dockerBuildDir}/docker"
     ;;
   windows)
-    cp ${CLI_DIR}/build/${targetPair}/docker-${TARGETOS}-*.exe "${dockerBuildDir}/docker.exe"
+    cp "${CLI_DIR}"/build/"${targetPair}"/docker-"${TARGETOS}"-*.exe "${dockerBuildDir}/docker.exe"
     ;;
 esac
 case ${TARGETOS} in
@@ -151,8 +162,8 @@ case ${TARGETOS} in
     done
     ;;
   windows)
-    cp ${ENGINE_DIR}/bundles/${TARGETPLATFORM}/dockerd-*.exe "${dockerBuildDir}/dockerd.exe"
-    cp ${ENGINE_DIR}/bundles/${TARGETPLATFORM}/docker-proxy-*.exe "${dockerBuildDir}/docker-proxy.exe"
+    cp "${ENGINE_DIR}"/bundles/"${TARGETPLATFORM}"/dockerd-*.exe "${dockerBuildDir}/dockerd.exe"
+    cp "${ENGINE_DIR}"/bundles/"${TARGETPLATFORM}"/docker-proxy-*.exe "${dockerBuildDir}/docker-proxy.exe"
     ;;
 esac
 # package docker
